@@ -522,7 +522,7 @@
         <h1 class="ui header" style="margin: 0;">ASM - Stock Checker</h1>
       </div>
       <div id="total" style="font-weight: bold; margin-bottom: 5px;">Total Products: 0</div>
-      <div style="font-size: 0.75rem; opacity: 0.5; margin-bottom: 10px;">Version 1.5.1 (Final Integration)</div>
+      <div style="font-size: 0.75rem; opacity: 0.5; margin-bottom: 10px;">Version 1.5.2 (Auto-Update)</div>
 
       <div class="ui fluid action input">
         <input type="text" id="barcode-input" placeholder="Scan barcode or enter manually" autofocus />
@@ -1572,8 +1572,42 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js')
-          .then(reg => console.log('SW Registered!', reg))
+          .then(reg => {
+            console.log('SW Registered!', reg);
+
+            // Check for updates periodically
+            setInterval(() => {
+              reg.update();
+            }, 60 * 1000); // Check every 1 minute
+
+            reg.onupdatefound = () => {
+              const installingWorker = reg.installing;
+              installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'installed') {
+                  if (navigator.serviceWorker.controller) {
+                    // New update available, notify or reload
+                    console.log('New content available; please refresh.');
+                    $('body').toast({
+                      class: 'info',
+                      title: 'ดาวน์โหลดเวอร์ชันใหม่สำเร็จ',
+                      message: 'ระบบกำลังรีโหลดแอปเพื่อให้เป็นเวอร์ชันล่าสุด...',
+                      displayTime: 3000,
+                      onHide: () => { window.location.reload(); }
+                    });
+                  }
+                }
+              };
+            };
+          })
           .catch(err => console.log('SW Registration failed:', err));
+      });
+
+      // Handle the case where the new SW has taken over
+      let refreshing;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        window.location.reload();
+        refreshing = true;
       });
     }
   </script>
