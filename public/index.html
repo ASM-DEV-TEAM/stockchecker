@@ -825,15 +825,17 @@
 
     // Smart Focus function
     function focusBarcode() {
-      // Don't steal focus if user is in search box
-      if (document.activeElement !== searchInput) {
+      const isScannerOpen = document.getElementById("scanner-overlay").style.display === "flex";
+      // Don't steal focus if user is in search box OR if scanner is open
+      if (document.activeElement !== searchInput && !isScannerOpen) {
         input.focus();
       }
     }
 
     function resetSearchTimeout() {
       clearTimeout(searchTimeout);
-      if (document.activeElement === searchInput) {
+      const isScannerOpen = document.getElementById("scanner-overlay").style.display === "flex";
+      if (document.activeElement === searchInput && !isScannerOpen) {
         searchTimeout = setTimeout(() => {
           // Force focus back to barcode input after 5s of inactivity
           input.focus();
@@ -866,7 +868,10 @@
         renderList();
 
         input.value = "";
-        input.focus(); // Focus after adding
+        const isScannerOpen = document.getElementById("scanner-overlay").style.display === "flex";
+        if (!isScannerOpen) {
+          input.focus(); // Focus after adding
+        }
       }
     }
 
@@ -893,6 +898,7 @@
     }
 
     async function startScanner() {
+      input.blur(); // Force keyboard down
       scannerOverlay.style.display = "flex";
       html5QrCode = new Html5Qrcode("reader");
 
