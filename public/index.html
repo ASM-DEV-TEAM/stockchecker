@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icons/icon-192x192.png">
+  <meta name="theme-color" content="#2185d0">
+
+  <link rel="stylesheet" type="text/css" href="vendor/fomantic/semantic.min.css">
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/fomantic/semantic.min.js"></script>
+  <script src="vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="vendor/html5-qrcode/html5-qrcode.min.js"></script>
+
+  <title>Stock App</title>
+  <style>
+    :root {
+      --bg-color: #f3f4f6;
+      --segment-bg: #ffffff;
+      --text-color: #1b1c1d;
+      --header-color: #1b1c1d;
+      --table-header-bg: #f9fafb;
+      --table-row-hover: #f1f1f1;
+      --border-color: rgba(34, 36, 38, 0.15);
+    }
+
+    body.dark-mode {
+      --bg-color: #1b1c1d;
+      --segment-bg: #242526;
+      --text-color: #e4e6eb;
+      --header-color: #ffffff;
+      --table-header-bg: #323334;
+      --table-row-hover: #3a3b3c;
+      --border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    body.dark-mode #mode-label {
+      color: var(--text-color) !important;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .ui.raised.segment {
+      background-color: var(--segment-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+    .ui.header {
+      color: var(--header-color) !important;
+    }
+
+    .ui.table {
+      background-color: var(--segment-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+    .ui.table thead th {
+      background-color: var(--table-header-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+    .ui.table tbody tr:hover {
+      background-color: var(--table-row-hover) !important;
+    }
+
+    .dark-mode .ui.input input {
+      background-color: #3a3b3c !important;
+      color: #ffffff !important;
+      border-color: var(--border-color) !important;
+    }
+
+    .toggle-row {
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .header-container {
+      margin-bottom: 1rem;
+    }
+
+    #mode-toggle-container {
+      float: right;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    body.dark-mode #mode-label {
+      color: var(--text-color) !important;
+    }
+
+    .search-container {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+
+    @media only screen and (max-width: 600px) {
+      .ui.stackable.buttons .button {
+        margin-bottom: 0.5em !important;
+      }
+
+      .container {
+        padding: 10px !important;
+      }
+
+      .ui.header {
+        font-size: 1.5rem !important;
+      }
+    }
+
+    /* Minimal Modal Styling */
+    #qty-modal {
+      border-radius: 15px;
+      overflow: hidden;
+      padding: 1rem;
+    }
+
+    #qty-modal .header {
+      border-bottom: none !important;
+      text-align: center;
+      font-weight: 600;
+      padding-bottom: 0.5rem;
+    }
+
+    #qty-modal .content {
+      text-align: center;
+      padding-top: 0 !important;
+    }
+
+    #qty-modal-input {
+      text-align: center;
+      font-size: 2rem !important;
+      border: none !important;
+      border-bottom: 2px solid var(--border-color) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    #qty-modal-input:focus {
+      border-bottom-color: #2185d0 !important;
+    }
+
+    #qty-modal .actions {
+      border-top: none !important;
+      background: transparent !important;
+      justify-content: center;
+      display: flex;
+    }
+
+    #qty-modal .button {
+      border-radius: 10px !important;
+      padding: 12px 25px !important;
+    }
+
+    .dark-mode .ui.modal {
+      background-color: var(--segment-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+    .dark-mode .ui.modal .header {
+      background-color: var(--segment-bg) !important;
+      color: var(--header-color) !important;
+      border-bottom: 1px solid var(--border-color) !important;
+    }
+
+    .dark-mode .ui.modal .content {
+      background-color: var(--segment-bg) !important;
+      color: var(--text-color) !important;
+    }
+
+    .dark-mode .ui.modal .actions {
+      background-color: var(--segment-bg) !important;
+      border-top: 1px solid var(--border-color) !important;
+    }
+
+    /* Override for minimal qty-modal */
+    .dark-mode #qty-modal .actions {
+      border-top: none !important;
+    }
+
+    /* Swipe to Delete Styling */
+    .swipe-row {
+      position: relative;
+      overflow: hidden;
+      background-color: var(--segment-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: stretch;
+      min-height: 60px;
+    }
+
+    .swipe-content {
+      position: relative;
+      width: 100%;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--segment-bg);
+      z-index: 2;
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      touch-action: pan-y;
+    }
+
+    .swipe-actions {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 80px;
+      background-color: #db2828;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .swipe-actions .button {
+      background: transparent !important;
+      color: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    .barcode-text {
+      font-weight: 500;
+      word-break: break-all;
+      margin-right: 10px;
+    }
+
+    .qty-text {
+      font-weight: bold;
+      color: #2185d0;
+      font-size: 1.1rem;
+    }
+
+    /* Camera Scanner Styling */
+    #scanner-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    /* Hide the library's internal background to show full video */
+    #reader__scan_region {
+      background: transparent !important;
+    }
+
+    .scanner-ui-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+
+    #scan-info-bubble {
+      pointer-events: auto;
+      align-self: center;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 30px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 20px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: center;
+      min-width: 200px;
+    }
+
+    #capture-scan-btn {
+      pointer-events: auto;
+      align-self: center;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2185d0, #1678c2);
+      border: 5px solid white;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 40px;
+      color: white;
+      font-size: 2rem;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.3s;
+    }
+
+    #capture-scan-btn:active {
+      transform: scale(0.9);
+      background: #1678c2;
+    }
+
+    #close-scanner-btn {
+      pointer-events: auto;
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 10001;
+    }
+
+    .scanner-counter {
+      background: #2185d0;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      margin-left: 10px;
+    }
+
+    @media only screen and (max-width: 600px) {
+      #capture-scan-btn {
+        width: 100px;
+        height: 100px;
+        font-size: 2.5rem;
+        margin-bottom: 60px;
+        /* Adjust for thumb zone on mobile */
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="ui page dimmer" id="loading-dimmer" style="display: none">
+    <div class="content">
+      <div class="center">
+        <h2>Loading...</h2>
+      </div>
+    </div>
+  </div>
+  <div class="ui container" style="margin-top: 2em;">
+    <div class="ui raised segment">
+      <div class="toggle-row">
+        <div id="mode-toggle-container">
+          <span id="mode-label" style="cursor: pointer;">Dark Mode</span>
+          <div class="ui toggle checkbox" style="margin: 0;">
+            <input type="checkbox" id="dark-mode-chk">
+            <label style="cursor: pointer;"></label>
+          </div>
+        </div>
+      </div>
+      <div class="header-container">
+        <h1 class="ui header" style="margin: 0;">ASM - Stock Checker</h1>
+      </div>
+      <div id="total" style="font-weight: bold; margin-bottom: 10px;">Total Products: 0</div>
+
+      <div class="ui fluid action input">
+        <input type="text" id="barcode-input" placeholder="Scan barcode or enter manually" autofocus />
+        <button class="ui icon button" id="scan-enter-btn">
+          <i class="barcode icon"></i>
+        </button>
+        <button class="ui blue icon button" id="open-scanner-btn" title="Scan with Camera">
+          <i class="camera icon"></i>
+        </button>
+      </div>
+
+      <div class="search-container">
+        <div class="ui fluid icon input">
+          <input type="text" id="search-input" placeholder="Search by Barcode...">
+          <i class="search icon"></i>
+        </div>
+      </div>
+
+      <div style="border: 1px solid var(--border-color); border-radius: 5px; overflow: hidden; margin-bottom: 20px;">
+        <!-- Header for the list -->
+        <div
+          style="display: flex; justify-content: space-between; background-color: var(--table-header-bg); padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
+          <span>Barcode</span>
+          <span>Qty</span>
+        </div>
+        <div id="list-body"></div>
+      </div>
+      <div class="ui stackable buttons">
+        <button class="ui primary button" id="import-btn">
+          <i class="upload icon"></i>Import CSV
+        </button>
+        <button class="ui secondary button" id="export-csv-btn">
+          <i class="download icon"></i>Export CSV
+        </button>
+        <button class="ui secondary button" id="export-pdf-btn">
+          <i class="file pdf icon"></i>Export PDF
+        </button>
+        <button class="ui red button" id="clear-btn">
+          <i class="trash icon"></i>Clear All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quantity Modal -->
+  <div class="ui mini modal" id="qty-modal">
+    <div class="header">จำนวนสินค้าทั้งหมด</div>
+    <div class="content">
+      <div class="ui fluid transparent input" style="margin: 1.5rem 0;">
+        <input type="number" id="qty-modal-input" placeholder="0" min="0">
+      </div>
+      <div style="color: #999; font-size: 0.9rem; letter-spacing: 0.5px;">กรอกจำนวนรวม (หัก 1 อัตโนมัติ)</div>
+    </div>
+    <div class="actions">
+      <div class="ui basic button negative cancel">ยกเลิก</div>
+      <div class="ui primary button approve" id="qty-modal-confirm">ตกลง</div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="ui mini modal" id="delete-modal">
+    <div class="header">ยืนยันการลบ</div>
+    <div class="content">
+      <p>คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า <span id="delete-barcode-display" style="font-weight: bold;"></span>?</p>
+    </div>
+    <div class="actions">
+      <div class="ui basic button negative cancel">ยกเลิก</div>
+      <div class="ui red button approve" id="delete-modal-confirm">ลบรายการ</div>
+    </div>
+  </div>
+
+  <!-- Camera Scanner Overlay -->
+  <div id="scanner-overlay">
+    <button id="close-scanner-btn"><i class="close icon"></i></button>
+    <div id="reader"></div>
+    <div class="scanner-ui-overlay">
+      <div id="scan-info-bubble">
+        <span id="scanned-barcode-value">-</span>
+        <span class="scanner-counter" id="scanned-count-bubble">0</span>
+      </div>
+      <div id="capture-scan-btn">
+        <i class="checkmark icon"></i>
+      </div>
+    </div>
+  </div>
+  <script>
+    let products = JSON.parse(localStorage.getItem("products")) || [];
+    let searchQuery = "";
+    let lastScannedBarcode = "";
+
+    // Dark Mode Logic
+    const darkModeChk = document.getElementById("dark-mode-chk");
+    const modeLabel = document.getElementById("mode-label");
+    const isDarkMode = localStorage.getItem("darkMode") === "enabled";
+
+    // Initialize Fomantic UI checkbox
+    $('.ui.checkbox').checkbox();
+
+    if (isDarkMode) {
+      document.body.classList.add("dark-mode");
+      darkModeChk.checked = true;
+    }
+
+    darkModeChk.addEventListener("change", () => {
+      if (darkModeChk.checked) {
+        document.body.classList.add("dark-mode");
+        localStorage.setItem("darkMode", "enabled");
+      } else {
+        document.body.classList.remove("dark-mode");
+        localStorage.setItem("darkMode", "disabled");
+      }
+    });
+
+    modeLabel.addEventListener("click", () => {
+      darkModeChk.click();
+    });
+
+    function formatTime(timestamp) {
+      if (!timestamp) return "-";
+      const date = new Date(timestamp);
+      return date.toLocaleTimeString('th-TH', {
+        hour12: false
+      }) + " " + date.toLocaleDateString('th-TH');
+    }
+
+    function renderList() {
+      // Filter based on search query
+      const filteredProducts = products.filter(p =>
+        p.barcode.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+      // Sort by timestamp (newest first)
+      filteredProducts.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const container = document.getElementById("list-body");
+      container.innerHTML = "";
+
+      if (filteredProducts.length === 0) {
+        container.innerHTML = `<div style="padding: 2.5rem; text-align: center; color: gray;">
+          <i class="box open icon" style="font-size: 2rem; display: block; margin-bottom: 10px;"></i>
+          ไม่มีข้อมูลสินค้า
+        </div>`;
+      }
+
+      filteredProducts.forEach((p) => {
+        const itemDiv = document.createElement("div");
+        itemDiv.className = "swipe-row";
+        itemDiv.innerHTML = `
+            <div class="swipe-content" data-barcode="${p.barcode}">
+              <div class="barcode-text">${p.barcode}</div>
+              <div class="qty-text">${p.qty}</div>
+            </div>
+            <div class="swipe-actions">
+              <button class="ui button" onclick="deleteItem('${p.barcode}')">
+                <i class="trash icon"></i>
+              </button>
+            </div>
+          `;
+        container.appendChild(itemDiv);
+      });
+
+      document.getElementById("total").textContent = `Total Products: ${products.length}`;
+      initSwipe();
+    }
+
+    const input = document.getElementById("barcode-input");
+    const searchInput = document.getElementById("search-input");
+    let searchTimeout;
+
+    // Smart Focus function
+    function focusBarcode() {
+      // Don't steal focus if user is in search box
+      if (document.activeElement !== searchInput) {
+        input.focus();
+      }
+    }
+
+    function resetSearchTimeout() {
+      clearTimeout(searchTimeout);
+      if (document.activeElement === searchInput) {
+        searchTimeout = setTimeout(() => {
+          // Force focus back to barcode input after 5s of inactivity
+          input.focus();
+
+          // Clear search when jumping back to scanning mode 
+          // to make it ready for the next scan
+          searchInput.value = "";
+          searchQuery = "";
+          renderList();
+        }, 5000);
+      }
+    }
+
+    function addProduct(barcode) {
+      if (barcode) {
+        const existing = products.find((p) => p.barcode === barcode);
+        const now = Date.now();
+        if (existing) {
+          existing.qty++;
+          existing.timestamp = now;
+        } else {
+          products.push({
+            barcode,
+            qty: 1,
+            timestamp: now
+          });
+        }
+        lastScannedBarcode = barcode;
+        localStorage.setItem("products", JSON.stringify(products));
+        renderList();
+
+        input.value = "";
+        input.focus(); // Focus after adding
+      }
+    }
+
+    let deleteTimer;
+    // Camera Scanner Logic
+    let html5QrCode;
+    let currentDetectedBarcode = null;
+    const scannerOverlay = document.getElementById("scanner-overlay");
+    const openScannerBtn = document.getElementById("open-scanner-btn");
+    const closeScannerBtn = document.getElementById("close-scanner-btn");
+    const captureScanBtn = document.getElementById("capture-scan-btn");
+    const scanInfoBubble = document.getElementById("scan-info-bubble");
+    const scannedBarcodeValue = document.getElementById("scanned-barcode-value");
+    const scannedCountBubble = document.getElementById("scanned-count-bubble");
+
+    function updateScanBubble(barcode) {
+      currentDetectedBarcode = barcode;
+      scannedBarcodeValue.textContent = barcode;
+
+      const product = products.find(p => p.barcode === barcode);
+      scannedCountBubble.textContent = product ? product.qty : 0;
+
+      scanInfoBubble.style.opacity = "1";
+    }
+
+    async function startScanner() {
+      scannerOverlay.style.display = "flex";
+      html5QrCode = new Html5Qrcode("reader");
+
+      const config = {
+        fps: 25,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const minDimension = Math.min(viewfinderWidth, viewfinderHeight);
+          // Standard dynamic box: 70% of min dimension
+          let qrboxSize = Math.floor(minDimension * 0.7);
+          if (qrboxSize < 250) qrboxSize = 250;
+          if (qrboxSize > 600) qrboxSize = 600;
+          return {
+            width: qrboxSize,
+            height: qrboxSize
+          };
+        }
+        // Removed aspectRatio: 1.0 to allow video to fill portrait screen naturally
+      };
+
+      try {
+        await html5QrCode.start(
+          { facingMode: "environment" },
+          config,
+          (decodedText) => {
+            // Success: Update bubble but don't add yet
+            updateScanBubble(decodedText);
+          },
+          (errorMessage) => {
+            // parse error, ignore
+          }
+        );
+      } catch (err) {
+        console.error("Camera start error:", err);
+        alert("ไม่สามารถเข้าถึงกล้องได้: " + err);
+        stopScanner();
+      }
+    }
+
+    async function stopScanner() {
+      if (html5QrCode) {
+        try {
+          await html5QrCode.stop();
+          html5QrCode.clear();
+        } catch (err) {
+          console.error("Camera stop error:", err);
+        }
+      }
+      scannerOverlay.style.display = "none";
+      currentDetectedBarcode = null;
+      scanInfoBubble.style.opacity = "0";
+    }
+
+    openScannerBtn.addEventListener("click", startScanner);
+    closeScannerBtn.addEventListener("click", stopScanner);
+
+    captureScanBtn.addEventListener("click", () => {
+      if (currentDetectedBarcode) {
+        // Vibrate if supported
+        if ("vibrate" in navigator) {
+          navigator.vibrate(100);
+        }
+
+        addProduct(currentDetectedBarcode);
+
+        // Update bubble count immediately
+        const product = products.find(p => p.barcode === currentDetectedBarcode);
+        scannedCountBubble.textContent = product ? product.qty : 0;
+
+        // Visual feedback
+        captureScanBtn.style.background = "#21ba45"; // Success green
+        setTimeout(() => {
+          captureScanBtn.style.background = "linear-gradient(135deg, #2185d0, #1678c2)";
+        }, 200);
+
+        $('body').toast({
+          class: 'success',
+          message: `บันทึก ${currentDetectedBarcode} สำเร็จ`,
+          displayTime: 1000,
+          position: 'top center'
+        });
+      }
+    });
+
+    function deleteItem(barcode) {
+      // Reset the swiped row position
+      const row = document.querySelector(`.swipe-content[data-barcode="${barcode}"]`);
+      if (row) row.style.transform = 'translateX(0px)';
+
+      document.getElementById("delete-barcode-display").textContent = barcode;
+      const confirmBtn = document.getElementById("delete-modal-confirm");
+
+      $("#delete-modal").modal({
+        onVisible: function () {
+          let timeLeft = 5;
+          confirmBtn.classList.add("disabled");
+          confirmBtn.textContent = `ลบรายการ (${timeLeft}s)`;
+
+          if (deleteTimer) clearInterval(deleteTimer);
+          deleteTimer = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+              confirmBtn.textContent = `ลบรายการ (${timeLeft}s)`;
+            } else {
+              clearInterval(deleteTimer);
+              confirmBtn.classList.remove("disabled");
+              confirmBtn.textContent = "ลบรายการ";
+            }
+          }, 1000);
+        },
+        onHide: function () {
+          if (deleteTimer) clearInterval(deleteTimer);
+        },
+        onApprove: function () {
+          if (confirmBtn.classList.contains("disabled")) return false;
+
+          products = products.filter(p => p.barcode !== barcode);
+          if (lastScannedBarcode === barcode) {
+            lastScannedBarcode = "";
+          }
+          localStorage.setItem("products", JSON.stringify(products));
+          renderList();
+        }
+      }).modal("show");
+    }
+
+    function initSwipe() {
+      const rows = document.querySelectorAll('.swipe-content');
+      let startX = 0;
+      let currentX = 0;
+      let isSwiping = false;
+
+      function closeOtherRows(currentRow) {
+        rows.forEach(r => {
+          if (r !== currentRow && r.style.transform !== 'translateX(0px)' && r.style.transform !== '') {
+            r.style.transition = 'transform 0.3s ease';
+            r.style.transform = 'translateX(0px)';
+          }
+        });
+      }
+
+      rows.forEach(row => {
+        row.addEventListener('touchstart', (e) => {
+          closeOtherRows(row);
+          startX = e.touches[0].clientX;
+          isSwiping = true;
+          row.style.transition = 'none';
+        }, {
+          passive: true
+        });
+
+        row.addEventListener('touchmove', (e) => {
+          if (!isSwiping) return;
+          currentX = e.touches[0].clientX;
+          let diff = currentX - startX;
+
+          // Ignore small accidental movements (threshold: 10px)
+          if (Math.abs(diff) < 10) return;
+
+          // Only allow sliding to the left
+          if (diff < 0) {
+            // Adjust diff to account for threshold
+            let adjustedDiff = diff + 10;
+            if (adjustedDiff > 0) adjustedDiff = 0;
+
+            // Cap the slide at 80px
+            if (adjustedDiff < -80) adjustedDiff = -80;
+            row.style.transform = `translateX(${adjustedDiff}px)`;
+          } else {
+            row.style.transform = `translateX(0px)`;
+          }
+        }, {
+          passive: true
+        });
+
+        row.addEventListener('touchend', (e) => {
+          if (!isSwiping) return;
+          isSwiping = false;
+          row.style.transition = 'transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)';
+
+          let diff = currentX - startX;
+          // Threshold check in touchend too
+          if (diff < -50) { // Increased threshold slightly for snapping
+            // Snap to open
+            row.style.transform = `translateX(-80px)`;
+          } else {
+            // Snap back
+            row.style.transform = `translateX(0px)`;
+          }
+          // Reset currentX to prevent logic errors on next touch
+          currentX = startX;
+        });
+      });
+    }
+
+    input.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        e.preventDefault();
+        const productExists = lastScannedBarcode && products.some(p => p.barcode === lastScannedBarcode);
+        if (productExists) {
+          $("#qty-modal").modal({
+            onVisible: function () {
+              const modalInput = document.getElementById("qty-modal-input");
+              modalInput.value = "";
+              modalInput.focus();
+            },
+            onApprove: function () {
+              const modalInput = document.getElementById("qty-modal-input");
+              const extraQty = parseInt(modalInput.value);
+              if (!isNaN(extraQty) && extraQty > 1) {
+                const product = products.find(p => p.barcode === lastScannedBarcode);
+                if (product) {
+                  product.qty += (extraQty - 1);
+                  localStorage.setItem("products", JSON.stringify(products));
+                  renderList();
+                }
+              } else if (extraQty === 1) {
+                // Do nothing as it's already added 1
+              }
+
+              // Only reset lastScannedBarcode if user added a valid positive quantity
+              if (extraQty > 0) {
+                lastScannedBarcode = "";
+              }
+
+              input.focus();
+            },
+            onHide: function () {
+              input.focus();
+            }
+          }).modal("show");
+        } else {
+          $('body').toast({
+            class: 'warning',
+            message: 'กรุณาแสกนบาร์โค้ดหรือเลือกสินค้าก่อนกด Spacebar',
+            displayTime: 3000,
+            position: 'top center'
+          });
+        }
+      }
+    });
+
+    document.getElementById("qty-modal-input").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        document.getElementById("qty-modal-confirm").click();
+      }
+    });
+
+    input.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        addProduct(input.value.trim());
+      }
+    });
+
+    document.getElementById("scan-enter-btn").addEventListener("click", () => {
+      addProduct(input.value.trim());
+    });
+
+    // Auto-focus barcode when clicking anywhere on the page, 
+    // but not when clicking search or interactable elements
+    document.addEventListener("click", (e) => {
+      if (e.target !== searchInput && !searchInput.contains(e.target) && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+        focusBarcode();
+      }
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      renderList();
+      resetSearchTimeout(); // Reset when typing
+    });
+
+    searchInput.addEventListener("focus", resetSearchTimeout); // Start timeout on focus
+    searchInput.addEventListener("keyup", resetSearchTimeout); // Reset on keyup
+    searchInput.addEventListener("blur", () => clearTimeout(searchTimeout)); // Clear if blurred manually
+
+    const importBtn = document.getElementById("import-btn");
+    importBtn.addEventListener("click", () => {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".csv";
+      fileInput.onchange = (e) => {
+        $("#loading-dimmer").dimmer("show");
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const csv = e.target.result;
+          const lines = csv.split("\n");
+          const now = Date.now();
+          lines.forEach((line) => {
+            const [barcode, qty] = line.split(",");
+            if (barcode && barcode.trim() !== "" && barcode.trim() !== "Barcode" && qty) {
+              const b = barcode.trim();
+              const q = parseInt(qty.trim()) || 0;
+              const existing = products.find((p) => p.barcode === b);
+              if (existing) {
+                existing.qty += q;
+                existing.timestamp = now;
+              } else {
+                products.push({
+                  barcode: b,
+                  qty: q,
+                  timestamp: now
+                });
+              }
+            }
+          });
+          localStorage.setItem("products", JSON.stringify(products));
+          renderList();
+          $("#loading-dimmer").dimmer("hide");
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    });
+
+    const exportCsvBtn = document.getElementById("export-csv-btn");
+    exportCsvBtn.addEventListener("click", () => {
+      let csv = "Barcode,Qty,Timestamp\n";
+      products.forEach((p) => {
+        csv += `${p.barcode},${p.qty},${p.timestamp || ""}\n`;
+      });
+      const blob = new Blob([csv], {
+        type: "text/csv"
+      });
+      const url = URL.createObjectURL(blob);
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `products_stock_${timestamp}.csv`;
+      a.click();
+    });
+
+    const exportPdfBtn = document.getElementById("export-pdf-btn");
+    exportPdfBtn.addEventListener("click", () => {
+      const {
+        jsPDF
+      } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Product Stock Inventory", 14, 15);
+
+      let y = 25;
+      doc.setFontSize(10);
+      doc.text(`Generated on: ${new Date().toLocaleString('th-TH')}`, 14, y);
+      y += 10;
+
+      doc.setFontSize(12);
+      doc.text("Barcode", 14, y);
+      doc.text("Qty", 120, y);
+
+      y += 3;
+      doc.line(14, y, 200, y); // Draw line below header
+      y += 7; // Space before first row
+
+      doc.setFontSize(10);
+      products.forEach((p) => {
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(p.barcode, 14, y);
+        doc.text(p.qty.toString(), 120, y);
+        y += 8; // Increased spacing between rows
+      });
+      doc.save("products_stock.pdf");
+    });
+
+    const clearBtn = document.getElementById("clear-btn");
+    clearBtn.addEventListener("click", () => {
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลทั้งหมด?")) {
+        products = [];
+        lastScannedBarcode = "";
+        localStorage.setItem("products", JSON.stringify(products));
+        renderList();
+      }
+    });
+
+    renderList();
+  </script>
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('SW Registered!', reg))
+          .catch(err => console.log('SW Registration failed:', err));
+      });
+    }
+  </script>
+</body>
+
+</html>
