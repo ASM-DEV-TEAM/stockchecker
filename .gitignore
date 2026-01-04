@@ -3,7 +3,7 @@
 Thumbs.db
 
 # Project Specific
-index.html
+/index.html
 # Only keep the project in the public folder
 # (Assuming the root index.html was a backup or old version)
 
@@ -11,3 +11,4 @@ index.html
 *.log
 tmp/
 node_modules/
+temp/

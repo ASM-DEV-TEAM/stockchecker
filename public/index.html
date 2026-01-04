@@ -101,6 +101,40 @@
       margin-bottom: 10px;
     }
 
+    .toggle-row {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+
+    /* Status Colors for Comparison */
+    .status-match {
+      color: #21ba45 !important;
+      font-weight: bold;
+    }
+
+    /* Green */
+    .status-over {
+      color: #f2711c !important;
+      font-weight: bold;
+    }
+
+    /* Orange */
+    .status-short {
+      color: #db2828 !important;
+      font-weight: bold;
+    }
+
+    /* Red */
+    .status-none {
+      color: var(--text-color) !important;
+      opacity: 0.8;
+    }
+
+    /* Default/White */
+
     @media only screen and (max-width: 600px) {
       .ui.stackable.buttons .button {
         margin-bottom: 0.5em !important;
@@ -233,12 +267,109 @@
       font-weight: 500;
       word-break: break-all;
       margin-right: 10px;
+      flex: 1.5;
+    }
+
+    .product-name-text {
+      font-size: 0.9rem;
+      color: var(--text-color);
+      opacity: 0.8;
+      flex: 2;
+      padding-right: 10px;
+    }
+
+    .expected-text {
+      font-size: 0.9rem;
+      flex: 1;
+      text-align: right;
+      padding-right: 10px;
     }
 
     .qty-text {
       font-weight: bold;
       color: #2185d0;
       font-size: 1.1rem;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* Master Modal & Viewer Enhancements */
+    #master-modal .content,
+    #viewer-modal .content {
+      background-color: var(--bg-color);
+    }
+
+    .master-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.5rem;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .master-card:hover {
+      border-color: #2185d0;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .view-table-container {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    .view-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .view-table th {
+      background: var(--table-header-bg);
+      position: sticky;
+      top: 0;
+      padding: 10px;
+      text-align: left;
+      border-bottom: 2px solid var(--border-color);
+      z-index: 5;
+    }
+
+    .view-table td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .step-number {
+      background: #2185d0;
+      color: white;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-text {
+      font-size: 0.95rem;
+      opacity: 0.9;
+      line-height: 1.4;
     }
 
     /* Camera Scanner Styling */
@@ -376,6 +507,9 @@
   <div class="ui container" style="margin-top: 2em;">
     <div class="ui raised segment">
       <div class="toggle-row">
+        <button class="ui tiny circular icon button" id="master-data-btn" title="Master Data Settings">
+          <i class="database icon"></i>
+        </button>
         <div id="mode-toggle-container">
           <span id="mode-label" style="cursor: pointer;">Dark Mode</span>
           <div class="ui toggle checkbox" style="margin: 0;">
@@ -409,15 +543,17 @@
       <div style="border: 1px solid var(--border-color); border-radius: 5px; overflow: hidden; margin-bottom: 20px;">
         <!-- Header for the list -->
         <div
-          style="display: flex; justify-content: space-between; background-color: var(--table-header-bg); padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-weight: bold;">
-          <span>Barcode</span>
-          <span>Qty</span>
+          style="display: flex; justify-content: space-between; background-color: var(--table-header-bg); padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+          <span style="flex: 1.5;">Barcode</span>
+          <span style="flex: 2;">Name</span>
+          <span style="flex: 1; text-align: right; padding-right: 10px;">Exp.</span>
+          <span style="min-width: 50px; text-align: right;">Count</span>
         </div>
         <div id="list-body"></div>
       </div>
       <div class="ui stackable buttons">
         <button class="ui primary button" id="import-btn">
-          <i class="upload icon"></i>Import CSV
+          <i class="upload icon"></i>Import Count
         </button>
         <button class="ui secondary button" id="export-csv-btn">
           <i class="download icon"></i>Export CSV
@@ -459,6 +595,117 @@
     </div>
   </div>
 
+  <!-- Master Data Modal -->
+  <div class="ui small modal" id="master-modal">
+    <div class="header" style="background: #2185d0; color: white; border: none;">
+      <i class="database icon"></i> คลังข้อมูลสินค้าหลัก (Master Data)
+    </div>
+    <div class="content" style="padding: 1.5rem;">
+      <div class="ui stackable two column grid">
+        <div class="column">
+          <div class="master-card">
+            <div>
+              <h4 class="ui header" style="margin-bottom: 1.5rem;">
+                <i class="info circle icon"></i> สถานะปัจจุบัน
+              </h4>
+              <div id="master-status-text" style="padding: 1rem 0; font-size: 1.1rem; line-height: 1.6;">
+                ยังไม่มีข้อมูลสินค้าในระบบ
+              </div>
+            </div>
+            <div style="margin-top: 1rem; display: flex; gap: 10px;">
+              <button class="ui primary basic flex-1 button" id="view-master-btn">
+                <i class="eye icon"></i> ดูข้อมูล
+              </button>
+              <button class="ui red basic flex-1 button" id="clear-master-btn">
+                <i class="trash icon"></i> ล้างข้อมูล
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="column">
+          <div class="master-card" style="border-left: 3px solid #2185d0;">
+            <div>
+              <h4 class="ui header" style="margin-bottom: 1.5rem;">
+                <i class="upload icon"></i> นำเข้าข้อมูลใหม่
+              </h4>
+              <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-text">เลือกไฟล์ CSV ที่ส่งออกจากระบบ (รองรับทั้ง `,` และ `;`)</div>
+              </div>
+              <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-text">ตั้งค่าคอลัมน์ Barcode, ชื่อสินค้า และยอดสต็อก</div>
+              </div>
+              <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-text">กด "นำเข้า" เพื่อเริ่มเปรียบเทียบยอด Stock ทันที</div>
+              </div>
+            </div>
+            <div style="margin-top: 1.5rem;">
+              <button class="ui blue fluid big button" id="import-master-btn">
+                <i class="file alternate outline icon"></i> เลือกไฟล์ CSV
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="actions" style="border: none; padding-top: 0;">
+      <div class="ui basic cancel button" style="border-radius: 20px;">ปิดหน้าต่าง</div>
+    </div>
+  </div>
+  <!-- Viewer Modal -->
+  <div class="ui large modal" id="viewer-modal">
+    <div class="header"><i class="eye icon"></i> รายการสินค้าในระบบ (Master Data)</div>
+    <div class="content">
+      <div class="ui fluid icon input" style="margin-bottom: 1rem;">
+        <input type="text" id="viewer-search" placeholder="ค้นหาตามรหัส หรือ ชื่อสินค้า...">
+        <i class="search icon"></i>
+      </div>
+      <div class="view-table-container">
+        <table class="view-table">
+          <thead>
+            <tr>
+              <th>Barcode</th>
+              <th>Product Name</th>
+              <th style="text-align: right;">Expected Stock</th>
+            </tr>
+          </thead>
+          <tbody id="viewer-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="actions">
+      <div class="ui cancel button">ปิด</div>
+    </div>
+  </div>
+  <div class="ui tiny modal" id="mapping-modal">
+    <div class="header">เลือกคอลัมน์ข้อมูล (Column Mapping)</div>
+    <div class="content">
+      <p>กรุณาเลือกคอลัมน์ที่ตรงกับข้อมูลในไฟล์ของคุณ:</p>
+      <form class="ui form" id="mapping-form">
+        <div class="field">
+          <label>Barcode (รหัสสินค้า)</label>
+          <select class="ui dropdown" id="map-barcode"></select>
+        </div>
+        <div class="field">
+          <label>Product Name (ชื่อสินค้า)</label>
+          <select class="ui dropdown" id="map-name"></select>
+        </div>
+        <div class="field">
+          <label>Expected Stock (จำนวนคงเหลือจริง)</label>
+          <select class="ui dropdown" id="map-stock">
+            <option value="">-- ไม่ระบุ (ไม่เปรียบเทียบยอด) --</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="actions">
+      <div class="ui basic button cancel">ยกเลิก</div>
+      <div class="ui primary button approve" id="confirm-mapping-btn">นำเข้าข้อมูล</div>
+    </div>
+  </div>
+
   <!-- Camera Scanner Overlay -->
   <div id="scanner-overlay">
     <button id="close-scanner-btn"><i class="close icon"></i></button>
@@ -475,6 +722,7 @@
   </div>
   <script>
     let products = JSON.parse(localStorage.getItem("products")) || [];
+    let masterData = JSON.parse(localStorage.getItem("masterData")) || {}; // { barcode: name }
     let searchQuery = "";
     let lastScannedBarcode = "";
 
@@ -533,12 +781,30 @@
       }
 
       filteredProducts.forEach((p) => {
+        const masterItem = masterData[p.barcode] || null;
+        const productName = masterItem ? masterItem.name : "-";
+        const expectedStock = masterItem && masterItem.stock !== undefined ? masterItem.stock : null;
+
+        let statusClass = "status-none";
+        let expectedDisplay = "-";
+
+        // Use default text color if not in Master Data or no expected stock
+        if (masterItem && expectedStock !== null) {
+          expectedDisplay = expectedStock;
+          const diff = p.qty - expectedStock;
+          if (diff === 0) statusClass = "status-match";
+          else if (diff > 0) statusClass = "status-over";
+          else statusClass = "status-short";
+        }
+
         const itemDiv = document.createElement("div");
         itemDiv.className = "swipe-row";
         itemDiv.innerHTML = `
             <div class="swipe-content" data-barcode="${p.barcode}">
               <div class="barcode-text">${p.barcode}</div>
-              <div class="qty-text">${p.qty}</div>
+              <div class="product-name-text">${productName}</div>
+              <div class="expected-text status-none">${expectedDisplay}</div>
+              <div class="qty-text ${statusClass}">${p.qty}</div>
             </div>
             <div class="swipe-actions">
               <button class="ui button" onclick="deleteItem('${p.barcode}')">
@@ -885,9 +1151,15 @@
     });
 
     // Auto-focus barcode when clicking anywhere on the page, 
-    // but not when clicking search or interactable elements
+    // but not when clicking search, modals, dropdowns or interactable elements
     document.addEventListener("click", (e) => {
-      if (e.target !== searchInput && !searchInput.contains(e.target) && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'INPUT') {
+      const isSearch = e.target === searchInput || searchInput.contains(e.target);
+      const isInteractable = ['BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName);
+      const isDropdown = e.target.closest('.ui.dropdown');
+      const isModal = e.target.closest('.ui.modal');
+      const isSpecificAction = e.target.closest('.swipe-actions');
+
+      if (!isSearch && !isInteractable && !isDropdown && !isModal && !isSpecificAction) {
         focusBarcode();
       }
     });
@@ -961,36 +1233,77 @@
 
     const exportPdfBtn = document.getElementById("export-pdf-btn");
     exportPdfBtn.addEventListener("click", () => {
-      const {
-        jsPDF
-      } = window.jspdf;
+      const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.text("Product Stock Inventory", 14, 15);
 
-      let y = 25;
+      // Professional Header
+      doc.setFontSize(22);
+      doc.setTextColor(33, 133, 208); // Semantic Blue
+      doc.text("ASM - STOCK CHECKER", 14, 20);
+
       doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleString('th-TH')}`, 14, y);
+      doc.setTextColor(100, 100, 100);
+      doc.text("Inventory Counting Report", 14, 27);
+      doc.text(`Date: ${new Date().toLocaleString('th-TH')}`, 14, 32);
+
+      // Table Header
+      let y = 45;
+      doc.setDrawColor(200, 200, 200);
+      doc.setFillColor(243, 244, 245);
+      doc.rect(14, y, 182, 10, 'F');
+
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont(undefined, 'bold');
+      doc.text("Barcode", 17, y + 7);
+      doc.text("Product Name", 60, y + 7);
+      doc.text("Exp.", 155, y + 7, { align: "right" });
+      doc.text("Count", 185, y + 7, { align: "right" });
+
       y += 10;
-
-      doc.setFontSize(12);
-      doc.text("Barcode", 14, y);
-      doc.text("Qty", 120, y);
-
-      y += 3;
-      doc.line(14, y, 200, y); // Draw line below header
-      y += 7; // Space before first row
-
+      doc.setLineWidth(0.1);
+      doc.setFont(undefined, 'normal');
       doc.setFontSize(10);
-      products.forEach((p) => {
-        if (y > 280) {
+
+      // Rows
+      products.forEach((p, index) => {
+        if (y > 250) {
           doc.addPage();
           y = 20;
+          // Redraw basic header on new page simple
+          doc.setFontSize(10);
+          doc.setTextColor(150);
+          doc.text("ASM - STOCK CHECKER (Cont.)", 14, 15);
+          y = 25;
         }
-        doc.text(p.barcode, 14, y);
-        doc.text(p.qty.toString(), 120, y);
-        y += 8; // Increased spacing between rows
+
+        const masterItem = masterData[p.barcode] || null;
+        const productName = masterItem ? masterItem.name : "-";
+        const expected = masterItem && masterItem.stock !== undefined ? masterItem.stock : "-";
+
+        doc.setTextColor(0, 0, 0);
+        doc.text(p.barcode, 17, y + 7);
+        doc.text(productName, 60, y + 7, { maxWidth: 85 });
+        doc.text(expected.toString(), 155, y + 7, { align: "right" });
+        doc.text(p.qty.toString(), 185, y + 7, { align: "right" });
+
+        y += 10;
+        doc.setDrawColor(230, 230, 230);
+        doc.line(14, y, 196, y); // Row line
       });
-      doc.save("products_stock.pdf");
+
+      // Signature Section
+      y += 30;
+      if (y > 260) { doc.addPage(); y = 30; }
+
+      doc.setFontSize(10);
+      doc.text("__________________________", 30, y);
+      doc.text("Checked By", 43, y + 7);
+
+      doc.text("__________________________", 130, y);
+      doc.text("Approved By", 143, y + 7);
+
+      doc.save(`Stock_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
     });
 
     const clearBtn = document.getElementById("clear-btn");
@@ -1001,6 +1314,248 @@
         localStorage.setItem("products", JSON.stringify(products));
         renderList();
       }
+    });
+    const masterDataBtn = document.getElementById("master-data-btn");
+    const importMasterBtn = document.getElementById("import-master-btn");
+    const clearMasterBtn = document.getElementById("clear-master-btn");
+    const masterStatusText = document.getElementById("master-status-text");
+
+    let masterInfo = JSON.parse(localStorage.getItem("masterInfo")) || { filename: "" };
+
+    function updateMasterStatus() {
+      const count = Object.keys(masterData).length;
+      if (count > 0) {
+        masterStatusText.innerHTML = `
+          <div class="ui green message">
+            <i class="check circle icon"></i>
+            พร้อมใช้งาน: <b>${count.toLocaleString()} รายการ</b>
+          </div>
+          <div style="font-size: 0.85rem; opacity: 0.7; margin-top: 5px;">
+            <i class="file alternate icon"></i> ไฟล์: <b>${masterInfo.filename || "ไม่ระบุชื่อ"}</b><br>
+            <i class="history icon"></i> อัปเดตล่าสุด: ${new Date().toLocaleDateString('th-TH')}
+          </div>
+        `;
+      } else {
+        masterStatusText.innerHTML = `
+          <div class="ui tiny orange message">
+            <i class="warning circle icon"></i> ยังไม่มีข้อมูลในคลัง
+          </div>
+          <p style="font-size: 0.9rem; opacity: 0.6;">กรุณานำเข้าไฟล์ CSV เพื่อเริ่มการตรวจสอบยอด</p>
+        `;
+      }
+    }
+
+    masterDataBtn.addEventListener("click", () => {
+      updateMasterStatus();
+      $("#master-modal").modal("show");
+    });
+
+    let currentCsvLines = [];
+    let currentCsvHeaders = [];
+
+    let currentFileName = "";
+
+    importMasterBtn.addEventListener("click", () => {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".csv";
+      fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        currentFileName = file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const csv = e.target.result;
+          const allLines = csv.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+          if (allLines.length < 1) return;
+
+          // Detect delimiter: comma or semicolon by checking first line
+          const head = allLines[0];
+          const commaCount = (head.match(/,/g) || []).length;
+          const semiCount = (head.match(/;/g) || []).length;
+          const delimiter = semiCount > commaCount ? ";" : ",";
+
+          // Robust CSV Split helper that handles quotes and escaped quotes
+          function splitCsv(str, delim) {
+            const parts = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < str.length; i++) {
+              let char = str[i];
+              let nextChar = str[i + 1];
+              if (char === '"') {
+                if (inQuotes && nextChar === '"') { current += '"'; i++; }
+                else inQuotes = !inQuotes;
+              } else if (char === delim && !inQuotes) {
+                parts.push(current);
+                current = '';
+              } else current += char;
+            }
+            parts.push(current);
+            return parts;
+          }
+
+          currentCsvHeaders = splitCsv(allLines[0], delimiter);
+          currentCsvLines = allLines.slice(1).map(l => ({ line: l, delim: delimiter }));
+
+          // Populate select dropdowns
+          const selects = ["map-barcode", "map-name", "map-stock"];
+          selects.forEach(id => {
+            const select = document.getElementById(id);
+            // Reset but keep first option for map-stock
+            const firstOption = id === "map-stock" ? select.options[0].outerHTML : "";
+            select.innerHTML = firstOption;
+
+            currentCsvHeaders.forEach((header, index) => {
+              const opt = document.createElement("option");
+              opt.value = index;
+              opt.textContent = `${header.trim().replace(/^"|"$/g, '')} (Column ${index + 1})`;
+
+              // Smart defaults based on keywords
+              const h = header.toLowerCase();
+              if (id === "map-barcode" && (h.includes("barcode") || h.includes("code") || h.includes("sku") || h.includes("id"))) opt.selected = true;
+              if (id === "map-name" && (h.includes("name") || h.includes("title") || h.includes("สินค้า") || h.includes("item"))) opt.selected = true;
+              if (id === "map-stock" && (h.includes("stock") || h.includes("qty") || h.includes("quantity") || h.includes("คงเหลือ"))) opt.selected = true;
+
+              select.appendChild(opt);
+            });
+            $(select).dropdown(); // Re-init Fomantic dropdown
+          });
+
+          $("#mapping-modal").modal("show");
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    });
+
+    document.getElementById("confirm-mapping-btn").addEventListener("click", () => {
+      const bIdx = parseInt(document.getElementById("map-barcode").value);
+      const nIdx = parseInt(document.getElementById("map-name").value);
+      const sVal = document.getElementById("map-stock").value;
+      const sIdx = sVal !== "" ? parseInt(sVal) : -1;
+
+      $("#loading-dimmer").dimmer("show");
+      let newMaster = {};
+
+      currentCsvLines.forEach((item) => {
+        const line = item.line;
+        const delim = item.delim;
+
+        // Use the same robust split logic
+        const parts = [];
+        let current = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          let char = line[i];
+          let nextChar = line[i + 1];
+          if (char === '"') {
+            if (inQuotes && nextChar === '"') { current += '"'; i++; }
+            else inQuotes = !inQuotes;
+          } else if (char === delim && !inQuotes) {
+            parts.push(current);
+            current = '';
+          } else current += char;
+        }
+        parts.push(current);
+
+        const clean = (val) => {
+          if (!val) return "";
+          let v = val.trim();
+          if (v.startsWith("'")) v = v.substring(1); // Remove Excel prefix
+          return v.replace(/^"|"$/g, '').trim();
+        };
+
+        const barcode = clean(parts[bIdx]);
+        const name = clean(parts[nIdx]);
+
+        let stock = undefined;
+        if (sIdx !== -1 && parts[sIdx]) {
+          const stockRaw = clean(parts[sIdx]).replace(/[฿,]/g, '');
+          stock = parseFloat(stockRaw);
+        }
+
+        if (barcode && barcode !== "-") {
+          newMaster[barcode] = { name, stock };
+        }
+      });
+
+      masterData = newMaster;
+      masterInfo = { filename: currentFileName };
+      localStorage.setItem("masterData", JSON.stringify(masterData));
+      localStorage.setItem("masterInfo", JSON.stringify(masterInfo));
+      updateMasterStatus();
+      renderList();
+      $("#loading-dimmer").dimmer("hide");
+      $("#mapping-modal").modal("hide");
+      $("#master-modal").modal("hide");
+
+      $('body').toast({
+        class: 'success',
+        message: `นำเข้าข้อมูลสินค้า ${Object.keys(newMaster).length} รายการสำเร็จ`,
+        position: 'top center'
+      });
+    });
+
+    clearMasterBtn.addEventListener("click", () => {
+      if (confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างฐานข้อมูลสินค้าทั้งหมด? (รายการที่นับไว้จะไม่หาย)")) {
+        masterData = {};
+        masterInfo = { filename: "" };
+        localStorage.removeItem("masterData");
+        localStorage.removeItem("masterInfo");
+        updateMasterStatus();
+        renderList();
+      }
+    });
+
+    // Master Data Viewer Logic
+    const viewMasterBtn = document.getElementById("view-master-btn");
+    const viewerModal = $("#viewer-modal");
+    const viewerTbody = document.getElementById("viewer-tbody");
+    const viewerSearch = document.getElementById("viewer-search");
+
+    function renderViewer(query = "") {
+      viewerTbody.innerHTML = "";
+      const barcodes = Object.keys(masterData);
+      const filtered = barcodes.filter(bc => {
+        const item = masterData[bc];
+        return bc.includes(query) || (item.name && item.name.toLowerCase().includes(query.toLowerCase()));
+      });
+
+      if (filtered.length === 0) {
+        viewerTbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: gray;">ไม่พบข้อมูล</td></tr>';
+        return;
+      }
+
+      // Display first 200 items for performance
+      filtered.slice(0, 200).forEach(bc => {
+        const item = masterData[bc];
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td style="font-family: monospace;">${bc}</td>
+          <td>${item.name || "-"}</td>
+          <td style="text-align: right;">${item.stock !== undefined ? item.stock : "-"}</td>
+        `;
+        viewerTbody.appendChild(row);
+      });
+
+      if (filtered.length > 200) {
+        const moreRow = document.createElement("tr");
+        moreRow.innerHTML = `<td colspan="3" style="text-align: center; opacity: 0.6; font-size: 0.8rem;">... และอีก ${filtered.length - 200} รายการ (ค้นหาเพื่อดูเจาะจง) ...</td>`;
+        viewerTbody.appendChild(moreRow);
+      }
+    }
+
+    viewMasterBtn.addEventListener("click", () => {
+      if (Object.keys(masterData).length === 0) {
+        alert("ยังไม่มีข้อมูล Master Data ในระบบ");
+        return;
+      }
+      renderViewer();
+      viewerModal.modal("show");
+    });
+
+    viewerSearch.addEventListener("input", (e) => {
+      renderViewer(e.target.value);
     });
 
     renderList();
