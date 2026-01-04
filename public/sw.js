@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-app-cache-v7';
+const CACHE_NAME = 'stock-app-cache-v8';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -40,6 +40,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // Network First strategy for the main page to ensure updates
+    if (event.request.mode === 'navigate' ||
+        (event.request.method === 'GET' && event.request.url.includes('index.html'))) {
+        event.respondWith(
+            fetch(event.request).catch(() => {
+                return caches.match(event.request);
+            })
+        );
+        return;
+    }
+
+    // Cache First for other assets
     event.respondWith(
         caches.match(event.request).then((response) => {
             return response || fetch(event.request);
