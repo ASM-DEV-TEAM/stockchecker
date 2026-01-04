@@ -1,0 +1,13 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Project Specific
+index.html
+# Only keep the project in the public folder
+# (Assuming the root index.html was a backup or old version)
+
+# Temporary Files
+*.log
+tmp/
+node_modules/
