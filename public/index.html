@@ -30,7 +30,12 @@
   </div>
   <div class="ui container" style="margin-top: 2em;">
     <div class="ui raised segment">
-      <div class="toggle-row">
+      <div class="toggle-row" style="display: flex; justify-content: space-between; align-items: center;">
+         <div style="font-size: 0.75rem; opacity: 0.5; display: flex; align-items: center; gap: 8px;">
+        Version 1.5.9(new barcode input with enterkeyhint)
+        <i class="redo icon" style="cursor: pointer;" onclick="window.location.reload()" title="รีโหลดแอป"></i>
+      </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
         <button class="ui tiny circular icon button" id="master-data-btn" title="Master Data Settings">
           <i class="database icon"></i>
         </button>
@@ -42,6 +47,7 @@
           </div>
         </div>
       </div>
+      </div>
       <div class="header-container">
         <h1 class="ui header" style="margin: 0;">ASM - Stock Checker</h1>
         <div id="user-display" style="font-size: 0.9rem; color: #666; margin-top: 5px; cursor: pointer;" onclick="changeUserName()" title="คลิกเพื่อเปลี่ยนชื่อผู้ใช้">
@@ -50,10 +56,7 @@
         </div>
       </div>
       <div id="total" style="font-weight: bold; margin-bottom: 5px;">Total Products: 0</div>
-      <div style="font-size: 0.75rem; opacity: 0.5; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-        Version 1.5.9(new barcode input with enterkeyhint)
-        <i class="redo icon" style="cursor: pointer;" onclick="window.location.reload()" title="รีโหลดแอป"></i>
-      </div>
+     
 
       <div class="ui fluid action input">
         <input type="text" inputmode="numeric" pattern="[0-9]*" enterkeyhint="go" id="barcode-input" placeholder="Scan barcode or enter manually"
