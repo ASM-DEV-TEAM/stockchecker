@@ -1416,18 +1416,19 @@
         // Add signature only on last page - fixed to bottom with enhanced clarity
         if (page === totalPages - 1) {
           pageContent += `
-            <div style="position: absolute; bottom: 50px; left: 0; right: 0; height: 100px; background: white; padding: 30px;">
+            <div style="position: absolute; bottom: 50px; left: 0; right: 0; background: white; padding: 30px;">
               <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                 <div style="width: 45%; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
                   <div style="font-weight: bold; color: #333; margin-bottom: 10px; font-size: 12px;">ลงชื่อผู้นับคลังสินค้า</div>
-                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 20px;"></div>
+                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 30px;"></div>
                   <div style="font-weight: bold; color: #000; font-size: 14px; margin-top: 5px;">${currentUser || 'Not specified'}</div>
                   <div style="color: #666; font-size: 11px; margin-top: 3px;">Checked By</div>
                 </div>
                 <div style="width: 45%; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
                   <div style="font-weight: bold; color: #333; margin-bottom: 10px; font-size: 12px;">ลงชื่อผู้ตรวจทาน</div>
-                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 20px;"></div>
+                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 30px;"></div>
                   <div style="font-weight: bold; color: #000; font-size: 14px; margin-top: 5px;">&nbsp;</div>
+                  <div style="font-weight: bold; color: #000; font-size: 14px; margin-top: 5px;">( ____________________ )</div>
                   <div style="color: #666; font-size: 11px; margin-top: 3px;">Approved By</div>
                 </div>
               </div>
