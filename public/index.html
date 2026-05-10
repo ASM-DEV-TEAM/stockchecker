@@ -12,9 +12,11 @@
   <script src="vendor/jquery/jquery.min.js"></script>
   <script src="vendor/fomantic/semantic.min.js"></script>
   <script src="vendor/jspdf/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="vendor/html5-qrcode/html5-qrcode.min.js"></script>
 
   <title>Stock App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-color: #f3f4f6;
@@ -520,6 +522,10 @@
       </div>
       <div class="header-container">
         <h1 class="ui header" style="margin: 0;">ASM - Stock Checker</h1>
+        <div id="user-display" style="font-size: 0.9rem; color: #666; margin-top: 5px; cursor: pointer;" onclick="changeUserName()" title="คลิกเพื่อเปลี่ยนชื่อผู้ใช้">
+          <i class="user icon"></i> <span id="current-user-name">กำลังโหลด...</span>
+          <i class="edit icon" style="font-size: 0.7rem; margin-left: 5px;"></i>
+        </div>
       </div>
       <div id="total" style="font-weight: bold; margin-bottom: 5px;">Total Products: 0</div>
       <div style="font-size: 0.75rem; opacity: 0.5; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
@@ -597,6 +603,20 @@
     <div class="actions">
       <div class="ui basic button negative cancel">ยกเลิก</div>
       <div class="ui red button approve" id="delete-modal-confirm">ลบรายการ</div>
+    </div>
+  </div>
+
+  <!-- User Name Modal -->
+  <div class="ui mini modal" id="user-modal">
+    <div class="header">กรุณาระบุชื่อผู้ใช้</div>
+    <div class="content">
+      <div class="ui fluid transparent input" style="margin: 1.5rem 0;">
+        <input type="text" id="user-name-input" placeholder="กรอกชื่อของคุณ" maxlength="50">
+      </div>
+      <div style="color: #999; font-size: 0.9rem; letter-spacing: 0.5px;">ชื่อของคุณจะถูกบันทึกไว้ในรายงาน PDF</div>
+    </div>
+    <div class="actions">
+      <div class="ui primary button approve" id="user-modal-confirm">ตกลง</div>
     </div>
   </div>
 
@@ -730,6 +750,68 @@
     let masterData = JSON.parse(localStorage.getItem("masterData")) || {}; // { barcode: name }
     let searchQuery = "";
     let lastScannedBarcode = "";
+    let currentUser = localStorage.getItem("currentUser") || "";
+
+    // User Identification Logic
+    function checkAndAskForUserName() {
+      if (!currentUser || currentUser.trim() === "") {
+        $('#user-modal').modal({
+          closable: false,
+          onDeny: function() {
+            return false; // Prevent closing without entering name
+          },
+          onApprove: function() {
+            const userName = document.getElementById('user-name-input').value.trim();
+            if (userName === "") {
+              alert('กรุณากรอกชื่อของคุณ');
+              return false;
+            }
+            currentUser = userName;
+            localStorage.setItem("currentUser", currentUser);
+            updateUserDisplay();
+            return true;
+          }
+        }).modal('show');
+        
+        // Focus on input field
+        setTimeout(() => {
+          document.getElementById('user-name-input').focus();
+        }, 300);
+      } else {
+        updateUserDisplay();
+      }
+    }
+
+    function updateUserDisplay() {
+      const userNameElement = document.getElementById('current-user-name');
+      if (currentUser) {
+        userNameElement.textContent = currentUser;
+      } else {
+        userNameElement.textContent = 'ไม่ได้ระบุชื่อ';
+      }
+    }
+
+    function changeUserName() {
+      document.getElementById('user-name-input').value = currentUser;
+      $('#user-modal').modal({
+        closable: true,
+        onApprove: function() {
+          const userName = document.getElementById('user-name-input').value.trim();
+          if (userName === "") {
+            alert('กรุณากรอกชื่อของคุณ');
+            return false;
+          }
+          currentUser = userName;
+          localStorage.setItem("currentUser", currentUser);
+          updateUserDisplay();
+          return true;
+        }
+      }).modal('show');
+      
+      setTimeout(() => {
+        document.getElementById('user-name-input').focus();
+      }, 300);
+    }
 
     // Dark Mode Logic
     const darkModeChk = document.getElementById("dark-mode-chk");
@@ -1243,77 +1325,179 @@
     });
 
     const exportPdfBtn = document.getElementById("export-pdf-btn");
-    exportPdfBtn.addEventListener("click", () => {
+    exportPdfBtn.addEventListener("click", async () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // Professional Header
-      doc.setFontSize(22);
-      doc.setTextColor(33, 133, 208); // Semantic Blue
-      doc.text("ASM - STOCK CHECKER", 14, 20);
+      // Create a temporary div for the PDF content
+      const pdfContent = document.createElement('div');
+      pdfContent.style.cssText = `
+        position: absolute;
+        left: -9999px;
+        top: 0;
+        width: 210mm;
+        padding: 20px;
+        background: white;
+        font-family: 'Sarabun', 'Arial', sans-serif;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #000000;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      `;
 
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text("Inventory Counting Report", 14, 27);
-      doc.text(`Date: ${new Date().toLocaleString('th-TH')}`, 14, 32);
+      // Generate paginated HTML content
 
-      // Table Header
-      let y = 45;
-      doc.setDrawColor(200, 200, 200);
-      doc.setFillColor(243, 244, 245);
-      doc.rect(14, y, 182, 10, 'F');
+      // Calculate rows per page (approximately 25 rows per page)
+      const rowsPerPage = 25;
+      const totalPages = Math.ceil(products.length / rowsPerPage);
 
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.setFont(undefined, 'bold');
-      doc.text("Barcode", 17, y + 7);
-      doc.text("Product Name", 60, y + 7);
-      doc.text("Exp.", 155, y + 7, { align: "right" });
-      doc.text("Count", 185, y + 7, { align: "right" });
+      // Create separate pages for proper PDF pagination
+      for (let page = 0; page < totalPages; page++) {
+        const startIndex = page * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, products.length);
+        const pageProducts = products.slice(startIndex, endIndex);
+        
+        const pageTableRows = pageProducts.map(p => {
+          const masterItem = masterData[p.barcode] || null;
+          const productName = masterItem ? masterItem.name : "-";
+          const expected = masterItem && masterItem.stock !== undefined ? masterItem.stock : "-";
+          
+          return `
+            <tr>
+              <td style="border: 1px solid #333; padding: 8px; color: #000; font-weight: 500;">${p.barcode}</td>
+              <td style="border: 1px solid #333; padding: 8px; color: #000; font-weight: 500;">${productName}</td>
+              <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #000; font-weight: 500;">${expected}</td>
+              <td style="border: 1px solid #333; padding: 8px; text-align: right; color: #000; font-weight: 500;">${p.qty}</td>
+            </tr>
+          `;
+        }).join('');
 
-      y += 10;
-      doc.setLineWidth(0.1);
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(10);
+        const pageHeader = page === 0 ? `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h1 style="color: #2185d0; margin: 0;">ASM - STOCK CHECKER</h1>
+            <p style="color: #666; margin: 5px 0;">Inventory Counting Report</p>
+            <p style="color: #666; margin: 5px 0;">Date: ${new Date().toLocaleString('th-TH')}</p>
+            <p style="color: #666; margin: 5px 0;">Checked By: ${currentUser || 'Not specified'}</p>
+          </div>
+        ` : `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="color: #2185d0; margin: 0;">ASM - STOCK CHECKER (ต่อ)</h3>
+          </div>
+        `;
 
-      // Rows
-      products.forEach((p, index) => {
-        if (y > 250) {
-          doc.addPage();
-          y = 20;
-          // Redraw basic header on new page simple
-          doc.setFontSize(10);
-          doc.setTextColor(150);
-          doc.text("ASM - STOCK CHECKER (Cont.)", 14, 15);
-          y = 25;
+        let pageContent = pageHeader + `
+          
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; background: white;">
+            <thead>
+              <tr style="background: #f8f9fa; border-bottom: 2px solid #333;">
+                <th style="border: 1px solid #333; padding: 10px 8px; text-align: left; color: #000; font-weight: 700; font-size: 13px;">Barcode</th>
+                <th style="border: 1px solid #333; padding: 10px 8px; text-align: left; color: #000; font-weight: 700; font-size: 13px;">Product Name</th>
+                <th style="border: 1px solid #333; padding: 10px 8px; text-align: right; color: #000; font-weight: 700; font-size: 13px;">Exp.</th>
+                <th style="border: 1px solid #333; padding: 10px 8px; text-align: right; color: #000; font-weight: 700; font-size: 13px;">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${pageTableRows}
+            </tbody>
+          </table>
+        `;
+
+        // Add footer with continuation text for all pages except first
+        if (page < totalPages - 1) {
+          pageContent += `
+            <div style="position: absolute; bottom: 30px; left: 0; right: 0; text-align: center;">
+              <p style="color: #666; margin: 0; font-size: 10px;">มีต่อหน้า ${page + 2}</p>
+            </div>
+          `;
         }
 
-        const masterItem = masterData[p.barcode] || null;
-        const productName = masterItem ? masterItem.name : "-";
-        const expected = masterItem && masterItem.stock !== undefined ? masterItem.stock : "-";
+        // Add signature only on last page - fixed to bottom with enhanced clarity
+        if (page === totalPages - 1) {
+          pageContent += `
+            <div style="position: absolute; bottom: 50px; left: 0; right: 0; height: 100px; background: white; padding: 30px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div style="width: 45%; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
+                  <div style="font-weight: bold; color: #333; margin-bottom: 10px; font-size: 12px;">ลงชื่อผู้นับคลังสินค้า</div>
+                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 20px;"></div>
+                  <div style="font-weight: bold; color: #000; font-size: 14px; margin-top: 5px;">${currentUser || 'Not specified'}</div>
+                  <div style="color: #666; font-size: 11px; margin-top: 3px;">Checked By</div>
+                </div>
+                <div style="width: 45%; text-align: center; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
+                  <div style="font-weight: bold; color: #333; margin-bottom: 10px; font-size: 12px;">ลงชื่อผู้ตรวจทาน</div>
+                  <div style="border-bottom: 2px solid #000; margin: 5px 0 15px 0; height: 20px;"></div>
+                  <div style="font-weight: bold; color: #000; font-size: 14px; margin-top: 5px;">&nbsp;</div>
+                  <div style="color: #666; font-size: 11px; margin-top: 3px;">Approved By</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
 
-        doc.setTextColor(0, 0, 0);
-        doc.text(p.barcode, 17, y + 7);
-        doc.text(productName, 60, y + 7, { maxWidth: 85 });
-        doc.text(expected.toString(), 155, y + 7, { align: "right" });
-        doc.text(p.qty.toString(), 185, y + 7, { align: "right" });
+        // Create page-specific content with proper positioning
+        const pageDiv = document.createElement('div');
+        pageDiv.style.cssText = `
+          position: absolute;
+          left: -9999px;
+          top: 0;
+          width: 210mm;
+          height: 297mm;
+          padding: 20px;
+          background: white;
+          font-family: 'Sarabun', 'Arial', sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #000000;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-rendering: optimizeLegibility;
+          position: relative;
+        `;
+        pageDiv.innerHTML = pageContent;
+        document.body.appendChild(pageDiv);
 
-        y += 10;
-        doc.setDrawColor(230, 230, 230);
-        doc.line(14, y, 196, y); // Row line
-      });
+        try {
+          // Capture each page as separate image
+          const canvas = await html2canvas(pageDiv, {
+            scale: 3,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            allowTaint: true,
+            removeContainer: false,
+            imageTimeout: 15000,
+            onclone: (clonedDoc) => {
+              const textElements = clonedDoc.querySelectorAll('td, th, p, div, h1, h3');
+              textElements.forEach(el => {
+                el.style.color = '#000000';
+                el.style.textShadow = 'none';
+                el.style.webkitTextStroke = '0.5px transparent';
+              });
+            }
+          });
 
-      // Signature Section
-      y += 30;
-      if (y > 260) { doc.addPage(); y = 30; }
+          const imgData = canvas.toDataURL('image/png');
+          
+          // Add to PDF
+          if (page > 0) {
+            doc.addPage();
+          }
+          
+          const imgWidth = 210;
+          const pageHeight = 295;
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          doc.addImage(imgData, 'PNG', 0, 10, imgWidth, Math.min(imgHeight, pageHeight - 20));
+          
+        } catch (error) {
+          console.error(`Error generating page ${page + 1}:`, error);
+        } finally {
+          document.body.removeChild(pageDiv);
+        }
+      }
 
-      doc.setFontSize(10);
-      doc.text("__________________________", 30, y);
-      doc.text("Checked By", 43, y + 7);
-
-      doc.text("__________________________", 130, y);
-      doc.text("Approved By", 143, y + 7);
-
+      // Save the PDF
       doc.save(`Stock_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
     });
 
@@ -1569,6 +1753,9 @@
       renderViewer(e.target.value);
     });
 
+    // Initialize user identification
+    checkAndAskForUserName();
+    
     renderList();
   </script>
   <!-- Service Worker Registration -->
