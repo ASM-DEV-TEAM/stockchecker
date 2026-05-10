@@ -1,0 +1,16 @@
+{
+  "name": "asm-stock-checker",
+  "version": "1.5.7",
+  "description": "Premium Stock Inventory Counting Application",
+  "main": "public/index.html",
+  "scripts": {
+    "build": "echo 'No build needed - static files in public folder'",
+    "deploy": "echo 'Ready for Netlify deployment'",
+    "serve": "cd public && python3 -m http.server 8000"
+  },
+  "keywords": ["stock", "inventory", "pwa", "barcode", "scanner"],
+  "author": "Antigravity",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
